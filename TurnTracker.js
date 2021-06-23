@@ -76,20 +76,6 @@ const TurnTracker = (() => {
         }
     };
 
-    const parseTurnOrder = (turnObj) => {
-        if (turnObj.id === "-1") { // A custom turn entry.
-            return `<span style="background: #AAA; font-weight: bold; padding: 0 3px;" title=${turnObj.id}>${turnObj.pr}</span>: ${turnObj.custom || "Unknown"}`;
-        } else { // A character turn entry.
-            const tokenObj = getObj("graphic", turnObj.id);
-            if (tokenObj) {
-                const name = (getObj("character", tokenObj.get("represents")) || {get: () => false}).get("name");
-                return `<span style="background: #AAA; font-weight: bold; padding: 0 3px;" title=${turnObj.id}>${turnObj.pr}</span>: ${name || turnObj.custom || "Someone"}`;
-            } else {
-                return `<span style="background: #AAA; font-weight: bold; padding: 0 3px;" title=${turnObj.id}>${turnObj.pr}</span>: Combatant`;
-            }
-        }
-    };
-
     const handleTurnChange = (cmpObj, prevData) => {
         // Changing Initiative Values in Turn Tracker
         // Changing Turn Order
@@ -113,7 +99,8 @@ const TurnTracker = (() => {
                 }
             }
             const addedCombatants = curCombatants.filter((x) => Boolean(x)).map((x) => JSON.parse(x));
-            showCampaign(cmpObj, prevData, "HandleTurnChange", `Combatant(s) ADDED: ${addedCombatants.map((x) => x.custom || x.id).join(" + ")}`);
+            showTurnOrder(curTurnOrder, "Current Turn Order");
+            C.Alert(addedCombatants.map((x) => x.custom || x.id).join(", "), "Combatant(s) ADDED:");
         } else if (curTurnOrder.length < prevTurnOrder.length) { // Combatant Removed
             // Filter out combatants already in list _sequentially_ so dupes aren't missed:
             const curCombatants = curTurnOrder.map((x) => JSON.stringify(x));
@@ -126,22 +113,25 @@ const TurnTracker = (() => {
                 }
             }
             const removedCombatants = prevCombatants.filter((x) => Boolean(x)).map((x) => JSON.parse(x));
-            showCampaign(cmpObj, prevData, "HandleTurnChange", `Combatant(s) REMOVED: ${removedCombatants.map((x) => x.custom || x.id).join(" + ")}`);
+            showTurnOrder(curTurnOrder, "Current Turn Order");
+            C.Alert(removedCombatants.map((x) => x.custom || x.id).join(", "), "Combatant(s) REMOVED:");
         } else if (curCombatants.join("|") !== prevCombatants.join("|")) {
             const diffCombatants = _.difference(curCombatants, prevCombatants);
             if (diffCombatants.length) { // Initiative Changed in Turn Tracker
                 const deltaCombatantIndices = diffCombatants.map((x) => curCombatants.findIndex((xx) => xx === x));
-                showCampaign(cmpObj, prevData, "HandleTurnChange", `Initiative Changed at Index(es): ${deltaCombatantIndices.join(", ")}`);
+                showTurnOrder(curTurnOrder, "Current Turn Order");
+                C.Flag(`Initiative Changed at [${deltaCombatantIndices.join(", ")}]`);
             } else { // Turn Order Changed.
                 if ([...prevCombatants.slice(1), prevCombatants[0]].join("|") === curCombatants.join("|")) { // Turn Advanced by One
-                    showCampaign(cmpObj, prevData, "HandleTurnChange", "Turn Order Advanced");
+                    showTurnOrder(curTurnOrder, "Turn Order ADVANCED");
                 } else { // Ambiguous Turn Order Change
-                    showCampaign(cmpObj, prevData, "HandleTurnChange", "Turn Order Changed");
+                    showTurnOrder(curTurnOrder, "Turn Order CHANGED");
                 }
             }
         } else {
-            C.Show({curTurnOrder: curTurnOrder.join("|"), prevTurnOrder: prevTurnOrder.join("|")});
-            showCampaign(cmpObj, prevData, "HandleTurnChange", "Something Happened!");
+            C.Flag("Something Happened!");
+            showTurnOrder(prevTurnOrder, "Previous");
+            showTurnOrder(curTurnOrder, "Current");
         }
     };
     const handleBattleToggle = (cmpObj, prevData) => {
@@ -158,6 +148,31 @@ const TurnTracker = (() => {
     // #endregion
 
     // #region UTILITY
+    let colorVal;
+    const getTurnName = (turnObj) => {
+        if (turnObj.id === "-1") {
+            return turnObj.custom || false;
+        }
+        const tokenObj = getObj("graphic", turnObj.id);
+        if (tokenObj) {
+            return (getObj("character", tokenObj.get("represents")) || {get: () => false}).get("name");
+        }
+    };
+    const parseTurn = (turnObj, isTextOnly = false) => {
+        const name = getTurnName(turnObj);
+        if (isTextOnly) {
+            return `[${turnObj.pr}]: ${name} (${turnObj.id})`;
+        } else {
+            colorVal = colorVal || 220;
+            colorVal -= 20;
+            const bgColor = `rgb(${colorVal}, ${colorVal}, ${colorVal})`;
+            return `<div style="display: block; height: 32px; background: ${bgColor}; line-height: 32px; font-family: sura; font-size: 20px;"><span style="display: inline-block;background: #aaa;font-weight: bold;padding: 0 3px;width: 20px;text-align: center;border-radius: 15px;border: 2px outset grey;height: 26px;line-height: 28px;" title=${turnObj.id}>${turnObj.pr}</span><span style="vertical-align:top;">${name || "Unknown Combatant"}</span></div>`;
+        }
+    };
+    const showTurnOrder = (turnData, title = "Turn Order") => {
+        colorVal = 220;
+        C.Alert(turnData.map((turn) => parseTurn(turn)).join(""), title);
+    };
     const showCampaign = (cmpObj = Campaign(), prev, title = "Campaign", message) => {
         const [cmpObjData, prevData] = [{}, {}];
         ["_type", "initiativepage", "playerpageid", "playerspecificpages"].forEach((key) => {
@@ -172,8 +187,8 @@ const TurnTracker = (() => {
                 prevData[key] = JSON.parse(prev[key]);
             }
         });
-        cmpObjData.turnorder = cmpObjData.turnorder.map((turn) => parseTurnOrder(turn));
-        prevData.turnorder = prevData.turnorder.map((turn) => parseTurnOrder(turn));
+        cmpObjData.turnorder = cmpObjData.turnorder.map((turn) => parseTurn(turn, true));
+        prevData.turnorder = prevData.turnorder.map((turn) => parseTurn(turn, true));
         const alertLines = [
             "<h3>Campaign Object</h3>",
             C.JC(cmpObjData)
