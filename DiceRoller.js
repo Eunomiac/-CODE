@@ -21,52 +21,46 @@ const DiceRoller = (() => {
         if (isRegisteringEventListeners) {
             on("chat:message", handleMessage);
         }
-        C.Flag(`... ${SCRIPTNAME} Ready!`);
-        log(`${SCRIPTNAME} Ready!`);
+        C.Flag(`... ${SCRIPTNAME}.js Ready!`, {force: true, direct: true});
+        setTimeout(PreloadImages, 1200);
+        log(`${SCRIPTNAME}.js Ready!`);
     };
 
     const handleMessage = (msg) => {
-        if (/(^!rhelp|^!rset|^!roll|^!raw|^!init)/u.test(msg.content)) {
+        if (/(^!r?help|^!rset|^!roll|^!raw|^!init)/u.test(msg.content)) {
             let [call, ...args] = (msg.content.match(/!\S*|\s@"[^"]*"|\s@[^\s]*|\s"[^"]*"|\s[^\s]*/gu) || [])
                 .map((x) => x.trim())
                 .filter((x) => Boolean(x));
             switch (call) {
-                case "!rhelp": displayHelp(); break;
+                case "!roll": displayRoll(resolveRoll(parseRollCommand(msg, args))); break;
+                case "!raw": displayRoll(resolveRoll(parseRollCommand(msg, ["d0", ...args]))); break;
+                case "!init": displayRoll(resolveRoll(parseRollCommand(msg, ["i", ...args]))); break;
+
                 case "!rset": {
                     switch (call = args.shift()) {
+                        case "preload": {
+                            PreloadImages();
+                            break;
+                        }
                         case "borat": {
-                            if (args.includes("true")) {
-                                STA.TE.isShowingBorat = true;
-                                C.Flag("Success is Great!", true);
-                            } else {
-                                STA.TE.isShowingBorat = false;
-                                C.Flag("Success is Just OK.", true);
-                            }
+                            STA.TE.isShowingBorat = args.includes("true");
+                            C.Flag(`Success is ${args.includes("true") ? "Great!" : "Just OK."}`, true);
                             break;
                         }
                         // no default
                     }
                     break;
                 }
-                case "!roll": displayRoll(resolveRoll(parseRollCommand(msg, args))); break; // Standard Roll:  !roll 7vs3 d10 r1 a3 "casts fireball!"
-                case "!raw": {
-                    args.unshift("d0");
-                    displayRoll(resolveRoll(parseRollCommand(msg, args)));
-                    break;
-                }
-                case "!init": {
-                    args.unshift("i3");
-                    displayRoll(resolveRoll(parseRollCommand(msg, args)));
-                    break;
-                }
+
+                case "!rhelp": case "!help": displayHelp(); break;
                 // no default
             }
         }
     };
     // #endregion
-    // #endregion
 
-    // #region IMAGE DEFINITIONS
+    // #region IMAGE DEFINITIONS & PRELOADING
+
     const DICE = {
         d: [
             null,
@@ -129,7 +123,7 @@ const DiceRoller = (() => {
         }
     };
     const BORAT = {
-        get succ() { return _.sample([
+        succ: [
             "https://thumbs.gfycat.com/HastyKeenHake-max-1mb.gif",
             "https://thumbs.gfycat.com/CourageousGlaringAffenpinscher-size_restricted.gif",
             "https://24.media.tumblr.com/tumblr_m67x5jOJh31r5u6eso1_400.gif",
@@ -138,8 +132,8 @@ const DiceRoller = (() => {
             "https://i.pinimg.com/originals/92/b7/88/92b788b44692b36e7cb671b4155bda96.gif",
             "https://thumbs.gfycat.com/ActualRigidAltiplanochinchillamouse-size_restricted.gif",
             "https://i.pinimg.com/originals/9b/65/fa/9b65fa0f1ba6fd4c696dd924f067d76e.gif"
-        ]);},
-        get fail() { return _.sample([
+        ],
+        fail: [
             "https://y.yarn.co/130804d7-a839-4789-9221-27aa3a35f138_text.gif",
             "https://thumbs.gfycat.com/HighlevelVeneratedEider-small.gif",
             "https://thumbs.gfycat.com/PoorDeliriousAfricanaugurbuzzard-size_restricted.gif",
@@ -149,9 +143,16 @@ const DiceRoller = (() => {
             "https://i.gifer.com/7P7G.gif",
             "https://media.giphy.com/media/O5xChSjqUIxsk/giphy.gif",
             "https://media.giphy.com/media/PkKr55wVrfVd78XeDb/giphy.gif"
-        ]);}
+        ]
+    };
+
+    const PreloadImages = () => {
+        const imageHTML = `${JSON.stringify(DICE)}${JSON.stringify(BORAT)}`.match(/http[^"]+/gu).map((url) => C.HTML({tag: "img", class: "preloadImg", src: url})).join("");
+        C.Direct(`<div style="display: block ; margin: -26px 0 -7px -45px ; width: auto ; min-width: 283px ; height: auto ; min-height: 39px ; position: relative ; border: none ; text-shadow: none ; box-shadow: none ; outline: 2px solid black ; padding: 0; overflow: hidden;"><div style="background: #666;outline: 2px solid black;padding: 5px;position:  relative;z-index: 3;opacity: 0.8;"><span style="display: block;color: white;font-variant: small-caps;font-size: 20px;line-height: 24px;font-family: sans-serif;position: relative;z-index: 2;font-weight: bold; text-align: center;">Preloading Images</span></div><div style="background: white; margin-top: -40px; position: relative; z-index: 1;">${imageHTML}</div></div>`, {force: true});
     };
     // #endregion
+    // #endregion *** *** FRONT *** ***
+
     // #region Initial Command Parsing to Create Roll Flags
     const parseRollCommand = (msg, args) => {
         /** RETURNS:
@@ -187,7 +188,7 @@ const DiceRoller = (() => {
         }
         if (Array.isArray(args) && args.length) {
             const message = (args.find((arg) => /^".*"$/u.test(arg)) || "").replace(/"/gu, "");
-            const flags = args.filter((arg) => /^\w(X|\d)+$/u.test(arg)).map((val) => val.replace(/10/gu, "X"));
+            const flags = args.filter((arg) => /^\w(p|X|\d)*$/u.test(arg)).map((val) => val.replace(/10/gu, "X"));
             const [pool, diff] = (args.find((arg) => /^\d+(v\D*\d+)?$/u.test(arg)) || "0").match(/^(\d+)v?\D*(\d+)?/u).slice(1,3).map((x) => x ? parseInt(x) : 0);
             return {
                 name,
@@ -215,13 +216,13 @@ const DiceRoller = (() => {
             ]),
             C.HTML({tag: "div", class: ["simpleLineDiv"]}, C.HTML({tag: "span", class: "bigGoldSpan"}, "Flags")),
             C.HTML({tag: "div", class: ["col2Div", "alignLeft", "shortLines"]}, [
-                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "s1"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Specialty")].join(""),
-                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "w1"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Willpower")].join(""),
-                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "d#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Double-#'s")].join(""),
+                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "sp"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Specialty")].join(""),
+                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "wp"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Willpower")].join(""),
+                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "d#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Double #+")].join(""),
                 [C.HTML({tag: "span", class: "bigWhiteSpan"}, "r###"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Reroll #'s")].join("")
             ].join("<br>")),
             C.HTML({tag: "div", class: ["col2Div", "alignLeft", "shortLines"]}, [
-                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "S#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Stunt Tier")].join(""),
+                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "s#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Stunt Tier")].join(""),
                 [C.HTML({tag: "span", class: "bigWhiteSpan"}, "a#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Auto-Succ's")].join(""),
                 [C.HTML({tag: "span", class: "bigWhiteSpan"}, "t#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Target #")].join(""),
                 [C.HTML({tag: "span", class: "bigWhiteSpan"}, "b###"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Botch #'s")].join("")
@@ -230,11 +231,12 @@ const DiceRoller = (() => {
             C.HTML({tag: "div", class: "alignLeft"}, [
                 [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll 3"), C.HTML({tag: "span", class: "smallGoldSpan"}, "\"Simple roll of 3 dice\"")].join(""),
                 [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll 3v4"), C.HTML({tag: "span", class: "smallGoldSpan"}, "\"Roll 3 dice vs. difficulty 4\"")].join(""),
-                [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll 3v4 w1 s1"), C.HTML({tag: "span", class: "smallGoldSpan"}, "\"Specialty & Spending WP\"")].join(""),
+                [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll 3v4 wp sp"), C.HTML({tag: "span", class: "smallGoldSpan"}, "\"Specialty & Spending WP\"")].join(""),
                 [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll 3 r123 a3"), C.HTML({tag: "span", class: "smallGoldSpan"}, "\"Reroll 1s, 2s & 3s, Add 3 Succs\"")].join(""),
+                [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll 3 s3"), C.HTML({tag: "span", class: "smallGoldSpan"}, "\"Once-in-a-lifetime Stunt\"")].join(""),
                 [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll 3 b25"), C.HTML({tag: "span", class: "smallGoldSpan"}, "\"Flag 2's & 5's as Botches\"")].join("")
             ].join("<br>"))
-        ])));
+        ])), {force: true});
     };
     const rollDie = () => Math.ceil(Math.random() * 10);
     const rollDice = (numDice) => new Array(parseInt(numDice) || 0).fill(null).map(() => rollDie());
@@ -272,15 +274,15 @@ const DiceRoller = (() => {
             pool
         };
         diff = diff || 0;
-        const rerollNums = (flags.find((flag) => /^r(\d|X)+/u.test(flag)) || "").slice(1).split("").map((num) => parseInt(num.replace(/X/gu, "10")));
-        const botchNums = (flags.find((flag) => /^b(\d|X)+/u.test(flag)) || "b1").slice(1).split("").map((num) => parseInt(num.replace(/X/gu, "10")));
-        const targetNum = parseInt((flags.find((flag) => /^t(\d|X)+/u.test(flag)) || "t7").replace(/X/gu, "10").slice(1));
-        const autoSuccs = parseInt((flags.find((flag) => /^a\d+/u.test(flag)) || "a0").slice(1));
-        const doublesNum = parseInt((flags.find((flag) => /^d(\d|X)+/u.test(flag)) || "dX").replace(/X/gu, "10").replace(/d0/u, "d11").slice(1));
-        const specVal = parseInt((flags.find((flag) => /^s\d+/u.test(flag)) || "s0").slice(1));
-        const stuntVal = parseInt((flags.find((flag) => /^S\d+/u.test(flag)) || "S0").slice(1));
-        const initSuccs = parseInt((flags.find((flag) => /^i\d+/u.test(flag)) || "i0").slice(1));
-        const wpSuccs = parseInt((flags.find((flag) => /^w\d+/u.test(flag)) || "w0").slice(1));
+        const rerollNums = (flags.find((flag) => /^r(0|([1-9])+|10)$/u.test(flag)) || "").slice(1).split("").map((num) => parseInt(num.replace(/X/gu, "10")));
+        const botchNums = (flags.find((flag) => /^b(0|([1-9])+|10)$/u.test(flag)) || "b1").slice(1).split("").map((num) => parseInt(num.replace(/X/gu, "10")));
+        const targetNum = parseInt((flags.find((flag) => /^t([0-9]|10)$/u.test(flag)) || "t7").replace(/X/gu, "10").slice(1));
+        const autoSuccs = parseInt((flags.find((flag) => /^a\d+$/u.test(flag)) || "a0").slice(1));
+        const doublesNum = parseInt((flags.find((flag) => /^d([0-9]|10)$/u.test(flag)) || "dX").replace(/X/gu, "10").replace(/d0/u, "d11").slice(1));
+        const specVal = _.some(flags, (flag) => /^sp$/u.test(flag)) ? 1 : 0;
+        const stuntVal = parseInt((flags.find((flag) => /^[S|s][0123]$/u.test(flag)) || "S0").slice(1));
+        const initSuccs = _.some(flags, (flag) => /^i$/u.test(flag)) ? 3 : 0;
+        const wpSuccs = _.some(flags, (flag) => /^wp$/u.test(flag)) ? 1 : 0;
         const [stuntDice, stuntSuccs] = [
             [0, 0],
             [2, 0],
@@ -401,7 +403,7 @@ const DiceRoller = (() => {
                                 ])
                                 : false,
                             rollResults.stuntTier > 0
-                                ? C.HTML({tag: "div", class: "dicePoolAddedFlagDiv", title: `+${getDiceCount(rollResults.stuntDice)} from Tier ${"I".repeat(rollResults.stuntTier)} Stunt.`}, [
+                                ? C.HTML({tag: "div", class: `dicePool${rollResults.usedSpec ? "Last" : "Added"}FlagDiv`, title: `+${getDiceCount(rollResults.stuntDice)} from Tier ${"I".repeat(rollResults.stuntTier)} Stunt.`}, [
                                     C.HTML({tag: "span", class: "medGoldSpan"}, `+${rollResults.stuntDice}`),
                                     C.HTML({tag: "span", class: "goldSpan"}, `Tier ${"I".repeat(rollResults.stuntTier)} Stunt.`)
                                 ])
@@ -454,7 +456,7 @@ const DiceRoller = (() => {
             if (rollNotes.length) {
                 return C.HTML(
                     {tag: "div", class: "rollNotesDiv"},
-                    rollNotes.map(([title, span]) => C.HTML({tag: "span", class: "smallGoldSpan", title}, span))
+                    rollNotes.map(([title, span]) => C.HTML({tag: "span", class: ["smallGoldSpan", "noVertPad"], title}, span))
                 );
             }
             return false;
@@ -495,7 +497,13 @@ const DiceRoller = (() => {
             } else if (rollResults.isSuccess) {
                 htmlParts.push(C.HTML({tag: "div", class: ["headerDiv", "alignCenter", "shortLines"]}, [
                     rollResults.diff
-                        ? C.HTML({tag: "span", class: ["bigWhiteSpan", "addTextShadow"]}, "Success!")
+                        ? C.HTML({tag: "span", class: ["bigWhiteSpan", "addTextShadow"]}, (STA.TE.isShowingBorat && rollResults.margin >= 7) ? _.sample([
+                            "High Five!",
+                            "Great Success!",
+                            "Let's Make <u>SEXYTIME!</u>",
+                            "Are You Excite?",
+                            "Whoa whoa wee wah!"
+                        ]) : "Success!")
                         : C.HTML({tag: "span", class: ["bigWhiteSpan", "addTextShadow"]}, `${rollResults.total} Successes!`),
                     rollResults.diff
                         ? `<br>${C.HTML({tag: "span", class: ["bigWhiteSpan", "addTextShadow"]}, `${rollResults.margin}`)} Threshold Success${rollResults.margin === 1 ? "" : "es"}`
@@ -517,13 +525,13 @@ const DiceRoller = (() => {
             }
             return htmlParts.join("");
         },
-        boratSuccess: () => C.HTML({tag: "img", class: "boratImg", src: BORAT.succ, title: "GREAT SUCCESS!"}),
-        boratFailure: () => C.HTML({tag: "img", class: "boratImg", src: BORAT.fail, title: "What? You joke?"})
+        boratSuccess: () => C.HTML({tag: "img", class: "boratImg", src: _.sample(BORAT.succ), title: "GREAT SUCCESS!"}),
+        boratFailure: () => C.HTML({tag: "img", class: "boratImg", src: _.sample(BORAT.fail), title: "What? You joke?"})
     };
     const displayRoll = (rollResults) => {
         C.Show(rollResults);
         if (rollResults.finalPool === 0) {
-            C.Flag("Roller Error: Zero Dice Submitted.", true);
+            C.Flag("Roller Error: Zero Dice Submitted.", {force: true, direct: true});
         } else {
             const innerHTML = [];
             const headerClasses = ["headerDiv", "alignCenter"];
@@ -554,29 +562,20 @@ const DiceRoller = (() => {
                         : false,
                     C.HTML({tag: "div", class: "blockDiv"}, innerHTML)
                 ]
-            ));
+            ), {force: true, noarchive: false});
         }
     };
 
     // #endregion
 
-    const runMsg = (content) => {
-        const [call, ...args] = (content.match(/!\S*|\s@"[^"]*"|\s@[^\s]*|\s"[^"]*"|\s[^\s]*/gu) || [])
-            .map((x) => x.trim())
-            .filter((x) => Boolean(x));
-        console.log();
+    // #endregion
+
+    // #endregion
+
+    return {
+        Initialize,
+        PreloadImages
     };
-    [
-        "!roll 7vs3 d10 r1 a3 \"casts fireball!\"",
-        "!roll 17vs3 d5 t8 a4 r1 r2 \"casts fireball!\""
-    ].forEach((content) => runMsg(content));
-
-
-    // #endregion
-
-    // #endregion
-
-    return {Initialize};
 
 })();
 

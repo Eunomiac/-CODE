@@ -30,8 +30,8 @@ const TurnTracker = (() => {
             Battle.InitCurrentBattle(STA.TE.currentBattle);
         }
 
-        C.Flag(`... ${SCRIPTNAME} Ready!`);
-        log(`${SCRIPTNAME} Ready!`);
+        C.Flag(`... ${SCRIPTNAME}.js [TEST] Ready!`, {force: true, direct: true});
+        log(`${SCRIPTNAME}.js [TEST] Ready!`);
     };
 
     const handleMessage = (msg) => {

@@ -64,12 +64,11 @@ const EssenceTracker = (() => {
             on("change:attribute", handleAttrChange);
         }
 
-        C.Flag(`... ${SCRIPTNAME} Ready!`);
-        log(`${SCRIPTNAME} Ready!`);
+        C.Flag(`... ${SCRIPTNAME}.js Ready!`, {force: true, direct: true});
+        log(`${SCRIPTNAME}.js Ready!`);
     };
     const handleMessage = (msg) => {
         if (msg.content.startsWith("!etp") || msg.content.startsWith("!et") && playerIsGM(msg.playerid)) {
-            C.Show(msg);
             let [call, ...args] = (msg.content.match(/!\S*|\s@"[^"]*"|\s@[^\s]*|\s"[^"]*"|\s[^\s]*/gu) || [])
                 .map((x) => x.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1"))
                 .filter((x) => Boolean(x));
@@ -77,7 +76,7 @@ const EssenceTracker = (() => {
                 ({
                     reset: () => { Initialize(false, true); setupTrackers() },
                     preload: () => {
-                        if (args[0] === "clear") {
+                        if (args.includes("clear")) {
                             clearImagePreloads();
                         } else {
                             preloadImages();
@@ -1042,6 +1041,7 @@ const EssenceTracker = (() => {
         return val;
     }).flat(4).filter((v) => typeof v === "string" && v.startsWith("http")));
     const preloadImages = () => {
+        DiceRoller.PreloadImages();
         const imgData = {
             _pageid: Campaign().get("playerpageid"),
             height: 300,

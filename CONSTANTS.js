@@ -14,10 +14,26 @@ const C = (() => {
     const SCRIPTNAME = "C";
     state[NAMESPACE][SCRIPTNAME] = state[NAMESPACE][SCRIPTNAME] || {};
 
-    const DEFAULTSTATE = {isShowingDebugMessages: true};
-
     const STA = {get TE() { return state[NAMESPACE][SCRIPTNAME] }};
     const MAS = {get TER() { return C.RO.OT.MASTER }};
+
+    const DEFAULTSTATE = {isShowingDebugMessages: true}; // Initial values for state storage.
+
+    // #region INITIALIZATION & EVENT HANDLERS
+    const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => { // Initialize State, Trackers, Event Listeners
+        if (isResettingState) { C.RO.OT[SCRIPTNAME] = {} }
+
+        // Initialize state storage with DEFAULTSTATE where needed.
+        C.RO.OT[SCRIPTNAME] = C.RO.OT[SCRIPTNAME] || {};
+        Object.entries(DEFAULTSTATE).filter(([key]) => !(key in STA.TE)).forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+
+        // Register event handlers for chat commands and character sheet attribute changes.
+        if (isRegisteringEventListeners) {
+            // Event listeners go here.
+        }
+        C.Flag(`... ${SCRIPTNAME}ONSTANTS.js Ready!`, {force: true, direct: true});
+        log(`${SCRIPTNAME}ONSTANTS.js Ready!`);
+    };
     // #endregion
 
     // #region *** *** CONSTANTS *** ***
@@ -136,7 +152,8 @@ const C = (() => {
 
         fadedred: "rgba(255, 0, 0, 0.2)",
 
-        palegold: "rgba( 255 , 220 , 180 , 1 )",
+        // palegold: "rgba( 255 , 220 , 180 , 1 )",
+        palegold: "#ffe775",
         brightgold: "rgba(255,223,0,1)",
         gold: "rgba(255,190,0,1)",
         midgold: "rgba(255,165,0,1)",
@@ -183,7 +200,11 @@ const C = (() => {
 
     // #region Sandbox Specifications
     const UNITSIZE = 10;
-    const CHATWIDTH = 270;
+    const CHATWIDTH = 283; // The minimum width of the chat panel, in pixels. Be sure to subtract twice any border widths.
+
+    const UPSHIFT = -26;   // Constants governing how the chat box is positioned in the chat panel: By default, everything
+    const LEFTSHIFT = -45; // shifts up and to the left to cover the standard chat output with the custom styles below.
+    const BOTTOMSHIFT = -7;
     const SANDBOX = {
         get height() { return parseInt(getObj("page", Campaign().get("playerpageid")).get("height")) * 70 },
         get width() { return parseInt(getObj("page", Campaign().get("playerpageid")).get("width")) * 70 },
@@ -370,15 +391,32 @@ const C = (() => {
     // #endregion
 
     // #region HTML Style Data
+    const IMGROOT = {
+        general: "https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/ClassRefactor/images/",
+        texture: "https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/ClassRefactor/images/textures/",
+        button: "https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/ClassRefactor/images/buttons/"
+    };
+    const GetImgURL = (imgFileName, imgType = "general") => `${IMGROOT[imgType]}${imgFileName}`;
     const CLASSES = {
         boxDiv: {
+            "display": "block",
+            "width": "auto", "min-width": `${CHATWIDTH}px`,
+            "height": "auto", "min-height": "39px",
+            "margin": `${UPSHIFT}px 0 ${BOTTOMSHIFT}px ${LEFTSHIFT}px`,
+            "padding": "0",
+            "color": COLORS.palegold,
+            "text-align": "center",
+            "position": "relative",
+            "text-shadow": "none", "box-shadow": "none", "border": "none",
+            "overflow": "hidden"
+        }/*
             "min-width": "270px",
             "margin": "-25px 0 0 -42px",
             "position": "relative",
             "font-size": "0",
             "background": "#FFF",
             "cursor": "default"
-        },
+        } */,
         nameDiv: {
             "padding": "2px",
             "color": "red",
@@ -387,6 +425,7 @@ const C = (() => {
             "line-height": "26px",
             "font-weight": "bold",
             "text-align": "left",
+            "background": "#FFF",
             "text-shadow": "1px 1px 1px black, 1px 1px 1px black, 1px 1px 1px black"
         },
         blockDiv: {
@@ -399,7 +438,7 @@ const C = (() => {
             "text-shadow": "2px 2px 1px black, 2px 2px 1px black, 2px 2px 1px black",
             "border": "2px solid black",
             "border-radius": "10px",
-            "box-shadow": "3px 3px 5px rgba(0,0,0,0.75)",
+            "box-shadow": "none",
             "overflow": "hidden"
         },
         headerDiv: {
@@ -413,7 +452,7 @@ const C = (() => {
         },
         bigWhiteSpan: {
             "display": "inline-block",
-            "padding": "0 3px",
+            "padding": "3px",
             "color": "white",
             "font-family": "'Futura PT'",
             "font-weight": "bolder",
@@ -422,7 +461,7 @@ const C = (() => {
         },
         bigGoldSpan: {
             "display": "inline-block",
-            "padding": "0 3px",
+            "padding": "3px",
             "font-family": "'Futura PT'",
             "font-weight": "bolder",
             "font-size": "24px",
@@ -430,7 +469,7 @@ const C = (() => {
         },
         medGoldSpan: {
             "display": "inline-block",
-            "padding": "0 3px",
+            "padding": "3px",
             "font-family": "'Futura PT'",
             "font-weight": "bolder",
             "font-size": "18px",
@@ -438,14 +477,14 @@ const C = (() => {
         },
         goldSpan: {
             "display": "inline-block",
-            "padding": "0 3px",
+            "padding": "3px",
             "vertical-align": "top",
             "line-height": "inherit",
             "font-size": "14px"
         },
         smallGoldSpan: {
             "display": "inline-block",
-            "padding": "0 3px",
+            "padding": "3px",
             "vertical-align": "top",
             "line-height": "inherit",
             "font-size": "11px"
@@ -462,9 +501,10 @@ const C = (() => {
         dicePoolAddedFlagDiv: {
             "margin-bottom": "-10px"
         },
+        dicePoolLastFlagDiv: { },
         col2Div: {
             "display": "inline-block",
-            "vertical-align": "baseline",
+            "vertical-align": "top",
             "width": "50%"
         },
         simpleLineDiv: {
@@ -539,13 +579,23 @@ const C = (() => {
             "font-family": "Futura PT",
             "font-weight": "bolder"
         },
+        noVertPad: {
+            "padding-top": "0 !important",
+            "padding-bottom": "0 !important"
+        },
         boratImg: {
             width: "90%",
             height: "auto",
+            // "min-height": "250px",
             "object-fit": "cover",
             border: "6px outset gold",
             "margin": "5px 0",
             "box-shadow": "3px 3px 5px black, 3px 3px 5px black, 3px 3px 5px black"
+        },
+        preloadImg: {
+            width: "5px",
+            height: "5px"
+            // "object-fit": "100%",
         }
     };
     // #endregion
@@ -589,32 +639,33 @@ const C = (() => {
     };
     const JS = (val) => JSON.stringify(val, null, 2).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;");
     const JC = (val) => C.CodeBlock(JS(val));
-    const RandStr = (length = 10) => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), length).join("");
-    const Alert = (content, title, isForcing = false) => {
-        if ((isForcing || STA.TE.isShowingDebugMessages) && (content || title)) {
-            if (title) {
-                if (content === null) {
-                    sendChat(RandStr(4), `/direct ${C.Box([
-                        C.Block(C.Header(title, 3), "#666")
-                    ].join(""))}`, null, {noarchive: true});
+    const randStr = (length = 10) => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), length).join("");
+
+
+    const Alert = (content, title, {direct = false, force = false, noarchive = true} = {}) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
+        const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
+        if (force || STA.TE.isShowingDebugMessages) {
+            if (content || title) {
+                if (title) {
+                    if (content === null) {
+                        sendChat(randStr(), `${direct ? "/direct" : "/w gm"} ${C.Box([
+                            C.Block(C.Header(title, 3), "#666")
+                        ].join(""))}`, null, {noarchive});
+                    } else {
+                        sendChat(randStr(), `${direct ? "/direct" : "/w gm"} ${C.Box([
+                            C.Block(C.Header(title, 3), "#666"),
+                            C.Block(content)
+                        ].join(""))}`, null, {noarchive});
+                    }
                 } else {
-                    sendChat(RandStr(4), `/direct ${C.Box([
-                        C.Block(C.Header(title, 3), "#666"),
-                        C.Block(content)
-                    ].join(""))}`, null, {noarchive: true});
+                    sendChat(randStr(), `${direct ? "/direct" : "/w gm"} ${content}`, null, {noarchive});
                 }
-            } else {
-                sendChat(RandStr(4), `/direct ${C.Box([
-                    C.Block(content)
-                ].join(""))}`);
             }
         }
     };
-    const Direct = (htmlContent) => {
-        sendChat(RandStr(4), `/direct ${htmlContent}`);
-    };
-    const Show = (obj, title = "Showing ...", isForcing = false) => Alert(JC(obj), title, isForcing);
-    const Flag = (msg, isForcing = false) => Alert(null, msg, isForcing);
+    const Direct = (htmlContent, options = {}) => Alert(htmlContent, null, Object.assign(options, {direct: true}));
+    const Show = (obj, title = "Showing ...", options = {}) => Alert(JC(obj), title, options);
+    const Flag = (msg, options = {}) => Alert(null, msg, options);
     const CapGroups = (str, regExp) => str.match(new RegExp(regExp), "u").slice(1);
     const KeyMapObj = (obj, keyFunc = (x) => x, valFunc = undefined) => {
         /*
@@ -912,12 +963,12 @@ const C = (() => {
         return htmlElement;
     };
 
-
+    /*
     const UPSHIFT = -25;
     const LEFTSHIFT = -42;
-    const BOTTOMSHIFT = 0;
-    const Box = (content) => `<div style=" display: block; margin: ${UPSHIFT}px 0 ${BOTTOMSHIFT}px ${LEFTSHIFT}px; width: auto; min-width: ${CHATWIDTH}px; height: auto; min-height: 24px; color: black; text-align: center; text-align-last: center; position: relative; border: none; text-shadow: none; box-shadow: none; outline: 2px solid black; padding: 0; overflow: hidden;">${content}</div>`;
-    const Header = (content, bgColor = "rgba(80,80,80,1)") => `<span style=" display: block; height: auto; width: auto; margin: 0; padding: 0 5px; text-align: left; text-align-last: left; color: white; background-color: ${bgColor}; border: none; text-shadow: none; box-shadow: none; font-variant: small-caps;font-size: 16px;line-height: 24px; font-family: 'Voltaire'; ">${content}</span>`;
+    const BOTTOMSHIFT = 0; */
+    const Box = (content) => `<div style=" display: block; margin: ${UPSHIFT}px 0 ${BOTTOMSHIFT}px ${LEFTSHIFT}px; width: auto; min-width: ${CHATWIDTH}px; height: auto; min-height: 39px; color: black; text-align: center; text-align-last: center; position: relative; border: none; text-shadow: none; box-shadow: none; outline: none; padding: 0; overflow: hidden;">${content}</div>`;
+    const Header = (content, bgColor = "rgba(80,80,80,1)") => `<span style=" display: block; height: auto; width: auto; margin: 0; padding: 0 5px; text-align: left; text-align-last: left; color: white; background-color: ${bgColor}; border: none; text-shadow: none; box-shadow: none; font-variant: small-caps;font-size: 16px;line-height: 24px; font-family: sans-serif; ">${content}</span>`;
     const Block = (content, bgColor = "white", fontFamily = "Sura", fontWeight = "normal", fontSize = 14, lineHeight) => `<div style=" width: 100%; background: ${bgColor}; outline: 2px solid black; font-family: '${fontFamily}'; font-weight: ${fontWeight}; font-size: ${fontSize}px; line-height: ${lineHeight ? lineHeight : fontSize + 4}px; margin-top: 2px; text-align: left; text-align-last: left; padding: 5px;">${content}</div>`;
     const CodeBlock = (content, bgColor = "white") => Block(content, bgColor, "Fira Code", "bold", 8);
     const Button = (name, command, style = {}) => `<span style="display: inline-block; width: ${style.width}; background: grey; color: white;"><a href="${command}">${name}</a></span>`;
@@ -926,6 +977,7 @@ const C = (() => {
 
 
     return {
+        Initialize,
         RO: {get OT() { return state[NAMESPACE] }},
         STA,
 
@@ -982,8 +1034,11 @@ const C = (() => {
     };
 })();
 
-on("ready", () => setTimeout(() => {
-    sendChat(RandStr(3), `/direct ${AlertFlag("API Operational")}`);
-    state[NAMESPACE].C.isShowingDebugMessages = curDebugState;
-}, 1000));
+on("ready", () => {
+    C.Initialize(true);
+    setTimeout(() => {
+        sendChat(_.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join(""), `/direct ${AlertFlag("API Operational")}`);
+        state[NAMESPACE].C.isShowingDebugMessages = curDebugState;
+    }, 1000);
+});
 void MarkStop("C");

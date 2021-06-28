@@ -25,8 +25,8 @@ const ExaltedMain = (() => {
             // on("change:campaign:turnorder", handleTurnChange);
             // on("change:campaign:initiativepage", handleInitToggle);
         }
-        C.Flag(`... ${SCRIPTNAME} Ready!`);
-        log(`${SCRIPTNAME} Ready!`);
+        C.Flag(`... ${SCRIPTNAME}.js Ready!`, {force: true, direct: true});
+        log(`${SCRIPTNAME}.js Ready!`);
     };
 
     const handleMessage = (msg) => {
@@ -36,7 +36,7 @@ const ExaltedMain = (() => {
                 .filter((x) => Boolean(x));
             ({
                 list: () => ({
-                    images: () => C.Show(findObjs({_type: "graphic"}).map((obj) => `${obj.id}: ${obj.get("name")} at ${parseInt(obj.get("left"))}x, ${parseInt(obj.get("top"))}y`)),
+                    images: () => C.Show(findObjs({_type: "graphic"}).map((obj) => `${obj.id}: ${obj.get("name")} at ${parseInt(obj.get("left"))}x, ${parseInt(obj.get("top"))}y`), "Images", {force: true}),
                     repsecs: () => {
                         if (msg.selected && msg.selected.length) {
                             let charObj = C.GetChar(msg);
@@ -83,9 +83,8 @@ const ExaltedMain = (() => {
                     char: () => { initChar(args.shift()) }
                 }[(call = args.shift() || "").toLowerCase()] || (() => false))(),
                 debug: () => {
-                    C.STA.TE.isShowingDebugMessages = true;
-                    C.Alert(`Debug Messages <b>${args[0] === "true" ? "ON" : "OFF"}</b>`, "Debug");
                     C.STA.TE.isShowingDebugMessages = args.shift() === "true";
+                    C.Alert(`Debug Messages <b>${C.STA.TE.isShowingDebugMessages ? "ON" : "OFF"}</b>`, "Debug", {force: true});
                 }
             }[(call = args.shift() || "").toLowerCase()] || (() => false))();
         }
