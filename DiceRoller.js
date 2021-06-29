@@ -52,7 +52,7 @@ const DiceRoller = (() => {
                     break;
                 }
 
-                case "!rhelp": case "!help": displayHelp(); break;
+                case "!rhelp": case "!help": displayHelp(msg.playerid); break;
                 // no default
             }
         }
@@ -203,40 +203,70 @@ const DiceRoller = (() => {
     // #endregion
 
     // #region Basic Dice Rolling
-    const displayHelp = () => {
-        C.Direct(C.HTML({tag: "div", class: "boxDiv"}, C.HTML({tag: "div", class: "blockDiv"}, [
+    const displayHelp = (playerID) => {
+        C.Alert(C.HTML({tag: "div", class: "boxDiv"}, C.HTML({tag: "div", class: "blockDiv"}, [
             C.HTML({tag: "div", class: "headerDiv"}, "Euno's Exalted 3E Dice Roller"),
-            C.HTML({tag: "div", class: ["simpleLineDiv", "shortLines"]}, [
-                C.HTML({tag: "span", class: "bigGoldSpan"}, "Syntax"),
-                C.HTML({tag: "div", class: "alignLeft"}, [
-                    C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll &lt;<span style=\"color: gold;\">pool</span>&gt;[v&lt;<span style=\"color: gold;\">diff</span>&gt;] [<span style=\"color: gold;\">flags</span>] \"[<span style=\"color: gold;\">title</span>]\""),
-                    C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!raw &lt;<span style=\"color: gold;\">pool</span>&gt;[v&lt;<span style=\"color: gold;\">diff</span>&gt;] [<span style=\"color: gold;\">flags</span>] \"[<span style=\"color: gold;\">title</span>]\""),
-                    C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!init &lt;<span style=\"color: gold;\">pool</span>&gt; [<span style=\"color: gold;\">flags</span>]")
+            C.HTML({tag: "span", class: ["bigGoldSpan", "alignLeft", "fullWidth", "block"]}, "Syntax:"),
+            C.HTML(
+                {tag: "div", class: ["shortLines", "fullWidth"]},
+                C.HTML({tag: "div", class: ["alignLeft", "fullWidth"]}, [
+                    C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "trebuchetFont"]}, [
+                        "<span style=\"color: gold; display: inline-block; width: 55px; font-family: 'Futura PT'; font-weight: bolder; font-size: 18px; margin-left: 5px;\">!roll</span>",
+                        "<span style=\"display: inline-block; width: 80px; font-weight: bold;\"><span style=\"color: lime;\">pool</span><span style=\"color: #0BB;\">[</span>v<span style=\"color: lime;\">diff</span><span style=\"color: #0BB;\">]</span></span>",
+                        "<span style=\"display: inline-block; width: 55px; font-weight: bold;\"><span style=\"color: #0BB;\">[</span><span style=\"color: lime;\">flags</span><span style=\"color: #0BB;\">]</span></span>",
+                        "<span style=\"display: inline-block; width: 75px; font-weight: bold;\"><span style=\"color: #0BB;\">[</span>\"<span style=\"color: lime;\">header</span>\"<span style=\"color: #0BB;\">]</span></span>"
+                    ].join("")),
+                    C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "trebuchetFont"]}, [
+                        "<span style=\"color: gold; display: inline-block; width: 55px; font-family: 'Futura PT'; font-weight: bolder; font-size: 18px; margin-left: 5px;\">!raw</span>",
+                        "<span style=\"display: inline-block; width: 80px; font-weight: bold;\"><span style=\"color: lime;\">pool</span><span style=\"color: #0BB;\">[</span>v<span style=\"color: lime;\">diff</span><span style=\"color: #0BB;\">]</span></span>",
+                        "<span style=\"display: inline-block; width: 55px; font-weight: bold;\"><span style=\"color: #0BB;\">[</span><span style=\"color: lime;\">flags</span><span style=\"color: #0BB;\">]</span></span>",
+                        "<span style=\"display: inline-block; width: 75px; font-weight: bold;\"><span style=\"color: #0BB;\">[</span>\"<span style=\"color: lime;\">header</span>\"<span style=\"color: #0BB;\">]</span></span>"
+                    ].join("")),
+                    C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "trebuchetFont"]}, [
+                        "<span style=\"color: gold; display: inline-block; width: 55px; font-family: 'Futura PT'; font-weight: bolder; font-size: 18px; margin-left: 5px;\">!init</span>",
+                        "<span style=\"display: inline-block; width: 40px; font-weight: bold;\"><span style=\"color: lime;\">pool</span></span>",
+                        "<span style=\"display: inline-block; width: 55px; font-weight: bold;\"><span style=\"color: #0BB;\">[</span><span style=\"color: lime;\">flags</span><span style=\"color: #0BB;\">]</span></span>",
+                        "<span style=\"display: inline-block; width: 75px; font-weight: bold;\"><span style=\"color: #0BB;\">[</span>\"<span style=\"color: lime;\">header</span>\"<span style=\"color: #0BB;\">]</span></span>"
+                    ].join(""))
                 ])
-            ]),
-            C.HTML({tag: "div", class: ["simpleLineDiv"]}, C.HTML({tag: "span", class: "bigGoldSpan"}, "Flags")),
-            C.HTML({tag: "div", class: ["col2Div", "alignLeft", "shortLines"]}, [
-                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "sp"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Specialty")].join(""),
-                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "wp"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Willpower")].join(""),
-                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "d#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Double #+")].join(""),
-                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "r###"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Reroll #'s")].join("")
-            ].join("<br>")),
-            C.HTML({tag: "div", class: ["col2Div", "alignLeft", "shortLines"]}, [
-                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "s#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Stunt Tier")].join(""),
-                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "a#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Auto-Succ's")].join(""),
-                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "t#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Target #")].join(""),
-                [C.HTML({tag: "span", class: "bigWhiteSpan"}, "b###"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft"]}, "Botch #'s")].join("")
-            ].join("<br>")),
-            C.HTML({tag: "div", class: ["simpleLineDiv", "shortLines"]}, C.HTML({tag: "span", class: "bigGoldSpan"}, "Examples")),
-            C.HTML({tag: "div", class: "alignLeft"}, [
-                [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll 3"), C.HTML({tag: "span", class: "smallGoldSpan"}, "\"Simple roll of 3 dice\"")].join(""),
-                [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll 3v4"), C.HTML({tag: "span", class: "smallGoldSpan"}, "\"Roll 3 dice vs. difficulty 4\"")].join(""),
-                [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll 3v4 wp sp"), C.HTML({tag: "span", class: "smallGoldSpan"}, "\"Specialty & Spending WP\"")].join(""),
-                [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll 3 r123 a3"), C.HTML({tag: "span", class: "smallGoldSpan"}, "\"Reroll 1s, 2s & 3s, Add 3 Succs\"")].join(""),
-                [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll 3 s3"), C.HTML({tag: "span", class: "smallGoldSpan"}, "\"Once-in-a-lifetime Stunt\"")].join(""),
-                [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "!roll 3 b25"), C.HTML({tag: "span", class: "smallGoldSpan"}, "\"Flag 2's & 5's as Botches\"")].join("")
-            ].join("<br>"))
-        ])), {force: true});
+            ),
+            C.HTML({tag: "span", class: ["bigGoldSpan", "alignLeft", "fullWidth", "block"]}, "Flags:"),
+            C.HTML({tag: "div", class: ["alignLeft", "fullWidth", "indent12"]}, [
+                C.HTML({tag: "div", class: ["col2Div", "alignLeft", "shortLines"]}, [
+                    [C.HTML({tag: "span", class: "bigWhiteSpan"}, "sp"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft", "fontSize12", "trebuchetFont", "baseline"]}, "Specialty")].join(""),
+                    [C.HTML({tag: "span", class: "bigWhiteSpan"}, "wp"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft", "fontSize12", "trebuchetFont", "baseline"]}, "Willpower")].join(""),
+                    [C.HTML({tag: "span", class: "bigWhiteSpan"}, "d#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft", "fontSize12", "trebuchetFont", "baseline"]}, "Double #+")].join(""),
+                    [C.HTML({tag: "span", class: "bigWhiteSpan"}, "r###"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft", "fontSize12", "trebuchetFont", "baseline"]}, "Reroll #'s")].join("")
+                ].join("<br>")),
+                C.HTML({tag: "div", class: ["col2Div", "alignLeft", "shortLines"]}, [
+                    [C.HTML({tag: "span", class: "bigWhiteSpan"}, "s#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft", "fontSize12", "trebuchetFont", "baseline"]}, "Stunt Tier")].join(""),
+                    [C.HTML({tag: "span", class: "bigWhiteSpan"}, "a#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft", "fontSize12", "trebuchetFont", "baseline"]}, "Auto-Succ's")].join(""),
+                    [C.HTML({tag: "span", class: "bigWhiteSpan"}, "t#"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft", "fontSize12", "trebuchetFont", "baseline"]}, "Target #")].join(""),
+                    [C.HTML({tag: "span", class: "bigWhiteSpan"}, "b###"), C.HTML({tag: "span", class: ["smallGoldSpan", "alignLeft", "fontSize12", "trebuchetFont", "baseline"]}, "Botch #'s")].join("")
+                ].join("<br>"))
+            ].join("")),
+            C.HTML({tag: "span", class: ["bigGoldSpan", "alignLeft", "fullWidth", "block"]}, "Examples:"),
+            C.HTML({tag: "div", class: ["alignLeft", "veryShortLines", "fullWidth", "block"]}, [
+                C.HTML({tag: "div", class: ["fullWidth", "block"]}, [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "<span style=\"color: gold;\">!roll</span> 3"), C.HTML({tag: "span", class: ["smallGoldSpan", "fontSize12", "floatRight", "alignRight", "trebuchetFont"]}, "— Standard Roll of 3 dice")].join("")),
+                C.HTML({tag: "div", class: ["fullWidth", "block"]}, [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "<span style=\"color: gold;\">!roll</span> 3 \"A Header!\""), C.HTML({tag: "span", class: ["smallGoldSpan", "fontSize12", "floatRight", "alignRight", "trebuchetFont"]}, "— Standard Roll of 3 dice,<br>with a Header")].join("")),
+                "<br>",
+                C.HTML({tag: "div", class: ["fullWidth", "block"]}, [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "<span style=\"color: gold;\">!roll</span> 3v4"), C.HTML({tag: "span", class: ["smallGoldSpan", "fontSize12", "floatRight", "alignRight", "trebuchetFont"]}, "— Roll 3 dice vs. difficulty 4")].join("")),
+                C.HTML({tag: "div", class: ["fullWidth", "block"]}, [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "<span style=\"color: gold;\">!roll</span> 3v4 sp wp"), C.HTML({tag: "span", class: ["smallGoldSpan", "fontSize12", "floatRight", "alignRight", "trebuchetFont"]}, "— Roll 3 dice vs. 4; Apply<br>Specialty; Spend WP")].join("")),
+                "<br>",
+                C.HTML({tag: "div", class: ["fullWidth", "block"]}, [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "<span style=\"color: gold;\">!roll</span> 3 r123 a3"), C.HTML({tag: "span", class: ["smallGoldSpan", "fontSize12", "floatRight", "alignRight", "trebuchetFont"]}, "— Roll 3; Reroll 1s, 2s & 3s;<br>Add 3 Automatic Successes")].join("")),
+                "<br>",
+                C.HTML({tag: "div", class: ["fullWidth", "block"]}, [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "<span style=\"color: gold;\">!roll</span> 3 s3"), C.HTML({tag: "span", class: ["smallGoldSpan", "fontSize12", "floatRight", "alignRight", "trebuchetFont"]}, "— Roll 3 dice; Apply Tier III Stunt")].join("")),
+                C.HTML({tag: "div", class: ["fullWidth", "block"]}, [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "<span style=\"color: gold;\">!roll</span> 3 b25"), C.HTML({tag: "span", class: ["smallGoldSpan", "fontSize12", "floatRight", "alignRight", "trebuchetFont"]}, "— Roll 3 dice; Flag 2s & 5s<br>as Botches <i>(not 1s)</i>")].join("")),
+                "<br>",
+                C.HTML({tag: "div", class: ["fullWidth", "block"]}, [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "<span style=\"color: gold;\">!roll</span> 3 d8"), C.HTML({tag: "span", class: ["smallGoldSpan", "fontSize12", "floatRight", "alignRight", "trebuchetFont"]}, "— Roll 3 dice; Double 8s, 9s & 10s")].join("")),
+                C.HTML({tag: "div", class: ["fullWidth", "block"]}, [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "<span style=\"color: gold;\">!roll</span> 3 t5"), C.HTML({tag: "span", class: ["smallGoldSpan", "fontSize12", "floatRight", "alignRight", "trebuchetFont"]}, "— Roll 3 dice; 5 & Up Count<br>as Successes")].join("")),
+                "<br>",
+                C.HTML({tag: "div", class: ["fullWidth", "block"]}, [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "<span style=\"color: gold;\">!roll</span> 3 d0 <span style=\"color: #0BB;\">/</span> <span style=\"color: gold;\">!raw</span> 3"), C.HTML({tag: "span", class: ["smallGoldSpan", "fontSize12", "floatRight", "alignRight", "trebuchetFont"]}, "— Roll 3 dice; No Doubling")].join("")),
+                C.HTML({tag: "div", class: ["fullWidth", "block"]}, [C.HTML({tag: "span", class: ["goldSpan", "whiteText", "alignLeft", "futuraFont"]}, "<span style=\"color: gold;\">!roll</span> 9 i <span style=\"color: #0BB;\">/</span> <span style=\"color: gold;\">!init</span> 3"), C.HTML({tag: "span", class: ["smallGoldSpan", "fontSize12", "floatRight", "alignRight", "trebuchetFont"]}, "— Join Battle with 9 dice<br><i>(adds 3 to the result)</i>")].join("")),
+                "<br>",
+                "<span style=\"display: block; height: 5px;\">&nbsp;</span>"
+            ].join(""))
+        ])), null, {force: true, target: (C.GetPlayerChar(playerID) || {get: () => playerID}).get("name")});
     };
     const rollDie = () => Math.ceil(Math.random() * 10);
     const rollDice = (numDice) => new Array(parseInt(numDice) || 0).fill(null).map(() => rollDie());
@@ -400,13 +430,13 @@ const DiceRoller = (() => {
                             rollResults.usedSpec
                                 ? C.HTML({tag: "div", class: "dicePoolAddedFlagDiv", title: "+1 die from applied Specialty."}, [
                                     C.HTML({tag: "span", class: "medGoldSpan"}, "+1"),
-                                    C.HTML({tag: "span", class: "goldSpan"}, "Specialty")
+                                    C.HTML({tag: "span", class: "goldSpan"}, "(Specialty)")
                                 ])
                                 : false,
                             rollResults.stuntTier > 0
-                                ? C.HTML({tag: "div", class: `dicePool${rollResults.usedSpec ? "Last" : "Added"}FlagDiv`, title: `+${getDiceCount(rollResults.stuntDice)} from Tier ${"I".repeat(rollResults.stuntTier)} Stunt.`}, [
+                                ? C.HTML({tag: "div", class: `dicePool${rollResults.usedSpec ? "Last" : "Added"}FlagDiv`, title: `+${getDiceCount(rollResults.stuntDice)} from Tier ${"I".repeat(rollResults.stuntTier)} Stunt`}, [
                                     C.HTML({tag: "span", class: "medGoldSpan"}, `+${rollResults.stuntDice}`),
-                                    C.HTML({tag: "span", class: "goldSpan"}, `Tier ${"I".repeat(rollResults.stuntTier)} Stunt.`)
+                                    C.HTML({tag: "span", class: "goldSpan"}, `(Tier ${"I".repeat(rollResults.stuntTier)} Stunt)`)
                                 ])
                                 : false
                         ]
@@ -429,7 +459,7 @@ const DiceRoller = (() => {
         rollNotesDiv: (rollResults) => {
             const rollNotes = [];
             if (rollResults.doublesNum === 11) {
-                rollNotes.push(["No dice count as two successes for this roll.", "◆ <u>NOT</u> Doubling 10s"]);
+                rollNotes.push(["No dice count as two successes for this roll.", "◆ <b>NOT</b> Doubling 10s"]);
             } else if (rollResults.doublesNum < 10) {
                 const doubledNums = [];
                 let thisDNum = rollResults.doublesNum;
@@ -448,11 +478,23 @@ const DiceRoller = (() => {
                     rollNotes.push([`Rerolling ${lastNum} until they no longer appear.`, `◆ Rerolling ${lastNum}`]);
                 }
             }
+            if (rollResults.wpSuccs) {
+                rollNotes.push(["Player spends 1 Willpower for an automatic success.", "◆ Spending Willpower"]);
+            }
+            if (rollResults.botchNums.length !== 1 || !rollResults.botchNums.includes(1)) {
+                const botchNums = rollResults.botchNums.map((num) => `${num}s`);
+                const lastNum = botchNums.pop();
+                if (botchNums.length) {
+                    rollNotes.push([`Flagging ${botchNums.join(", ")} and ${lastNum} as botches.`, `◆ ${botchNums.join(", ")} & ${lastNum} Botch`]);
+                } else {
+                    rollNotes.push([`Flagging ${lastNum} as a botch.`, `◆ ${lastNum} Botches`]);
+                }
+            }
             if (rollResults.targetNum !== 7) {
                 rollNotes.push([`Rolls of ${rollResults.targetNum} or higher are successes.`, `◆ Target Number is ${rollResults.targetNum}`]);
             }
             if (rollResults.autoSuccs > 0) {
-                rollNotes.push([`Player adding ${rollResults.autoSuccs} automatic success${rollResults.autoSuccs > 1 ? "es" : ""}.`, `◆ Adding ${rollResults.autoSuccs} Automatic Success${rollResults.autoSuccs > 1 ? "es" : ""}.`]);
+                rollNotes.push([`Player adding ${rollResults.autoSuccs} automatic success${rollResults.autoSuccs > 1 ? "es" : ""}.`, `◆ Adding ${rollResults.autoSuccs} Automatic Success${rollResults.autoSuccs > 1 ? "es" : ""}`]);
             }
             if (rollNotes.length) {
                 return C.HTML(

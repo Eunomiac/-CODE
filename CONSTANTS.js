@@ -406,21 +406,14 @@ const C = (() => {
             "width": "auto", "min-width": `${CHATWIDTH}px`,
             "height": "auto", "min-height": "39px",
             "margin": `${UPSHIFT}px 0 ${BOTTOMSHIFT}px ${LEFTSHIFT}px`,
-            "padding": "0 0 2px 0",
+            "padding": "0 0 5px 0",
             "color": COLORS.palegold,
             "text-align": "center",
             "position": "relative",
             "text-shadow": "none", "box-shadow": "none", "border": "none",
             "overflow": "hidden",
             "cursor": "default"
-        }/*
-            "min-width": "270px",
-            "margin": "-25px 0 0 -42px",
-            "position": "relative",
-            "font-size": "0",
-            "background": "#FFF",
-            "cursor": "default"
-        } */,
+        },
         nameDiv: {
             "padding": "2px",
             "color": "red",
@@ -567,8 +560,24 @@ const C = (() => {
         alignRight: {
             "text-align": "right"
         },
+        centerWidth75: {
+            "width": "75%",
+            "margin": "0 auto 0 auto"
+        },
+        floatRight: {
+            "float": "right"
+        },
         shortLines: {
             "line-height": "18px"
+        },
+        veryShortLines: {
+            "line-height": "14px"
+        },
+        fontSize12: {
+            "font-size": "12px"
+        },
+        indent12: {
+            "margin-left": "12px"
         },
         redBG: {
             "background-image": "url('https://i.imgur.com/Dbe0qwL.jpg')"
@@ -584,10 +593,17 @@ const C = (() => {
             "font-family": "Futura PT",
             "font-weight": "bolder"
         },
+        trebuchetFont: {
+            "font-family": "Trebuchet MS",
+            "font-weight": "bold"
+        },
         noVertPad: {
             "padding-top": "0 !important",
             "padding-bottom": "0 !important"
         },
+        fullWidth: {"width": "100%"},
+        block: {"display": "block"},
+        baseline: {"vertical-align": "baseline"},
         boratImg: {
             width: "90%",
             height: "auto",
