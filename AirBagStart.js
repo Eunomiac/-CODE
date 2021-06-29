@@ -32,7 +32,7 @@ const RandStr = (length = 10) => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJK
 // Log for Airbag
 const airLog = (logMsg, chatMsg, dbMsg) => {
         log(logMsg);
-        sendChat(RandStr(3), `/direct ${chatMsg || logMsg}`);
+        sendChat(RandStr(3), `/w gm ${chatMsg || logMsg}`);
     };
 
 // HTML Styles for Reporting

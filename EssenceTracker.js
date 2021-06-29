@@ -74,6 +74,7 @@ const EssenceTracker = (() => {
                 .filter((x) => Boolean(x));
             if (call === "!et") {
                 ({
+                    jump: () => { advanceTime(args.shift()) },
                     reset: () => { Initialize(false, true); setupTrackers() },
                     preload: () => {
                         if (args.includes("clear")) {
@@ -83,16 +84,12 @@ const EssenceTracker = (() => {
                         }
                     },
                     get: () => ({
-                        textname: () => { C.Alert(findObjs({_type: "text", name: "TextShadow"}).map((textObj) => textObj.get("text")).join("<br>")) },
                         pos: () => { getImgPos(msg.selected.pop()) },
                         all: () => { C.Show([msg.selected[0]].map((data) => getObj(data._type, data._id)).pop()) },
-                        allstate: () => { C.Show(state) },
+                        allstate: () => { C.Show(state, "STATE", {force: true, target: "Kainen"}) },
                         flatimg: () => { C.Show(getAllImages(), "All Unique Images") }
                     }[(call = args.shift() || "").toLowerCase()] || (() => false))(),
                     set: () => ({
-                        textname: () => {
-                            msg.selected.filter((data) => data._type === "text").forEach((data) => getObj("text", data._id).set({name: "TextShadow"}));
-                        },
                         pos: () => { setImgPos(msg.selected, ...args) },
                         name: () => { setImgName(msg.selected, args.join(" ")) }
                     }[(call = args.shift() || "").toLowerCase()] || (() => false))()
@@ -104,7 +101,8 @@ const EssenceTracker = (() => {
                         sorcbanked: () => { setTrackerAttr(C.GetPlayerChar(msg.playerid).id, "sorcerousbanked", ...args) },
                         anima: () => { setTrackerAttr(C.GetPlayerChar(msg.playerid).id, "anima", ...args) },
                         peripheral: () => { setTrackerAttr(C.GetPlayerChar(msg.playerid).id, "peripheral", ...args) },
-                        personal: () => { setTrackerAttr(C.GetPlayerChar(msg.playerid).id, "personal", ...args) }
+                        personal: () => { setTrackerAttr(C.GetPlayerChar(msg.playerid).id, "personal", ...args) },
+                        moterecharge: () => { setAttrs(C.GetPlayerChar(msg.playerid).id, {"moterecharge": parseInt(args.shift() || 0)}) }
                     }[(call = args.shift() || "").toLowerCase()] || (() => false))()
                 }[(call = args.shift() || "").toLowerCase()] || (() => false))();
             }
@@ -744,7 +742,7 @@ const EssenceTracker = (() => {
             getMin: (charID) => C.TRACKERS.sorcerous.min,
             getMax: (charID) => C.TRACKERS.sorcerous.max,
             getCur: (charID) => parseInt(getAttrByName(charID, TRACKERS.sorcerous.attrName)) || TRACKERS.sorcerous.defaultVal,
-            setCur: (charID, val) => setAttrs(charID, {[TRACKERS.sorcerous.attrName]: parseInt(val)}),
+            setCur: (charID, val) => { setAttrs(charID, {[TRACKERS.sorcerous.attrName]: parseInt(val)}); TRACKERS.sorcerous.syncHost(charID) },
             syncHost: (charID) => {
                 const val = TRACKERS.sorcerous.getCur(charID);
                 toggleHost(charID, TRACKERS.sorcerous.hostName, val > 0);
@@ -766,7 +764,7 @@ const EssenceTracker = (() => {
             getMin: (charID) => C.TRACKERS.sorcerousbanked.min,
             getMax: (charID) => C.TRACKERS.sorcerousbanked.max,
             getCur: (charID) => parseInt(getAttrByName(charID, TRACKERS.sorcerousbanked.attrName)) || TRACKERS.sorcerousbanked.defaultVal,
-            setCur: (charID, val) => setAttrs(charID, {[TRACKERS.sorcerousbanked.attrName]: parseInt(val)}),
+            setCur: (charID, val) => { setAttrs(charID, {[TRACKERS.sorcerousbanked.attrName]: parseInt(val)}); TRACKERS.sorcerousbanked.syncHost(charID) },
             syncHost: (charID) => {
                 const val = TRACKERS.sorcerousbanked.getCur(charID);
                 toggleHost(charID, TRACKERS.sorcerousbanked.hostName, val > 0);
@@ -787,15 +785,24 @@ const EssenceTracker = (() => {
             getMin: (charID) => C.TRACKERS.anima.min,
             getMax: (charID) => C.TRACKERS.anima.max,
             getCur: (charID) => parseInt(getAttrByName(charID, TRACKERS.anima.attrName)) || TRACKERS.anima.defaultVal,
-            setCur: (charID, val) => setAttrs(charID, {[TRACKERS.anima.attrName]: parseInt(val)}),
+            setCur: (charID, val) => {
+                const attrList = {[TRACKERS.anima.attrName]: parseInt(val)};
+                if (parseInt(val) !== TRACKERS.anima.getCur(charID)) {
+                    attrList.animapartialdecay = 0;
+                }
+                setAttrs(charID, attrList);
+                TRACKERS.anima.syncHost(charID);
+            },
             syncHost: (charID) => {
                 const val = TRACKERS.anima.getCur(charID);
                 const animData = IMAGES[MAS.TER.PCs[charID].animaClass][val];
-                for (const [hostName, hostVal] of Object.entries(animData)) {
-                    if (hostName.startsWith("ETA_")) {
-                        toggleHost(charID, hostName, hostVal);
-                    } else {
-                        setHostImgSrc(charID, hostName, hostVal);
+                if (animData) {
+                    for (const [hostName, hostVal] of Object.entries(animData)) {
+                        if (hostName.startsWith("ETA_")) {
+                            toggleHost(charID, hostName, hostVal);
+                        } else {
+                            setHostImgSrc(charID, hostName, hostVal);
+                        }
                     }
                 }
             }
@@ -807,7 +814,15 @@ const EssenceTracker = (() => {
             getMin: (charID) => C.TRACKERS.peripheral.min,
             getMax: (charID) => getEssenceMax(charID, "peripheral"),
             getCur: (charID) => parseInt(getAttrByName(charID, TRACKERS.peripheral.attrName)) || TRACKERS.peripheral.defaultVal,
-            setCur: (charID, val) => setAttrs(charID, {[TRACKERS.peripheral.attrName]: parseInt(val)}),
+            setCur: (charID, val) => {
+                val = Math.max(0, Math.min(parseInt(val), TRACKERS.peripheral.getMax(charID)));
+                const attrList = {[TRACKERS.peripheral.attrName]: val};
+                if (val === TRACKERS.peripheral.getMax(charID) && TRACKERS.personal.getCur(charID) === TRACKERS.personal.getMax(charID)) {
+                    attrList.moterechargepartialtime = 0;
+                }
+                setAttrs(charID, attrList);
+                TRACKERS.peripheral.syncHost(charID);
+            },
             syncHost: (charID) => {
                 const val = TRACKERS.peripheral.getCur(charID);
                 toggleHost(charID, TRACKERS.peripheral.hostName, val > 0);
@@ -829,9 +844,17 @@ const EssenceTracker = (() => {
             hostName: "ETI_OuterRing1B",
             defaultVal: 0,
             getMin: (charID) => C.TRACKERS.peripheral.min,
-            getMax: (charID) => getEssenceMax(charID, "peripheral"),
+            getMax: (charID) => getEssenceMax(charID, "peripheral", true),
             getCur: (charID) => parseInt(getAttrByName(charID, TRACKERS.periphcommitted.attrName)) || TRACKERS.periphcommitted.defaultVal,
-            setCur: (charID, val) => setAttrs(charID, {[TRACKERS.periphcommitted.attrName]: parseInt(val)}),
+            setCur: (charID, val) => {
+                val = Math.max(0, Math.min(parseInt(val), TRACKERS.periphcommitted.getMax(charID)));
+                const attrList = {[TRACKERS.periphcommitted.attrName]: val};
+                setAttrs(charID, {[TRACKERS.periphcommitted.attrName]: val});
+                if (TRACKERS.peripheral.getCur(charID) >= TRACKERS.peripheral.getMax(charID)) {
+                    TRACKERS.peripheral.setCur(charID, TRACKERS.peripheral.getMax(charID));
+                }
+                TRACKERS.periphcommitted.syncHost(charID);
+            },
             syncHost: (charID) => {
                 const val = TRACKERS.periphcommitted.getCur(charID);
                 toggleHost(charID, TRACKERS.periphcommitted.hostName, val > 0);
@@ -853,7 +876,15 @@ const EssenceTracker = (() => {
             getMin: (charID) => C.TRACKERS.personal.min,
             getMax: (charID) => getEssenceMax(charID, "personal"),
             getCur: (charID) => parseInt(getAttrByName(charID, TRACKERS.personal.attrName)) || TRACKERS.personal.defaultVal,
-            setCur: (charID, val) => setAttrs(charID, {[TRACKERS.personal.attrName]: parseInt(val)}),
+            setCur: (charID, val) => {
+                val = Math.max(0, Math.min(parseInt(val), TRACKERS.personal.getMax(charID)));
+                const attrList = {[TRACKERS.personal.attrName]: val};
+                if (val === TRACKERS.personal.getMax(charID) && TRACKERS.peripheral.getCur(charID) === TRACKERS.peripheral.getMax(charID)) {
+                    attrList.moterechargepartialtime = 0;
+                }
+                setAttrs(charID, attrList);
+                TRACKERS.personal.syncHost(charID);
+            },
             syncHost: (charID) => {
                 const val = TRACKERS.personal.getCur(charID);
                 toggleHost(charID, TRACKERS.personal.getHostName(charID), val > 0);
@@ -906,6 +937,7 @@ const EssenceTracker = (() => {
                     deltaAttrs[`willpower-spent${i}`] = i <= amountSpent ? 1 : 0;
                 }
                 setAttrs(charID, deltaAttrs);
+                TRACKERS.personal.syncHost(charID);
             },
             syncHost: (charID) => {
                 const val = TRACKERS.willpower.getCur(charID);
@@ -988,11 +1020,11 @@ const EssenceTracker = (() => {
             getImgPos({_id: imgObj.id});
         });
     };
-    const getEssenceMax = (charRef, essenceType) => {
+    const getEssenceMax = (charRef, essenceType, isIgnoringCommitted = false) => {
         const charObj = C.GetChar(charRef);
         if (charObj) {
             const exaltType = C.GetExaltType(charObj.id);
-            const committedEssence = parseInt(getAttrByName(charObj.id, "committedesstotal")) || 0;
+            const committedEssence = isIgnoringCommitted ? 0 : parseInt(getAttrByName(charObj.id, "committedesstotal")) || 0;
             if (!["solar", "lunar"].includes(exaltType)) {
                 return 0;
             }
@@ -1230,6 +1262,68 @@ const EssenceTracker = (() => {
             TRACKERS[tracker].setCur(charID, val);
             TRACKERS[tracker].syncHost(charID);
         }
+    };
+    const advanceTime = (timeRef) => {
+        const rechargeMotes = (charID) => {
+            const [persMax, periphMax] = [getEssenceMax(charID, "personal"), getEssenceMax(charID, "peripheral")];
+            const [personal, peripheral] = [TRACKERS.personal.getCur(charID), TRACKERS.peripheral.getCur(charID)];
+            let moterecharge = parseInt(getAttrByName(charID, "moterecharge") || 0);
+            if (moterecharge) {
+                const [persDeficit, periphDeficit] = [persMax - personal, periphMax - peripheral];
+                if (persDeficit > 0) {
+                    TRACKERS.personal.setCur(charID, personal + Math.min(persDeficit, moterecharge));
+                    moterecharge -= Math.min(persDeficit, moterecharge);
+                }
+                if (periphDeficit > 0) {
+                    TRACKERS.peripheral.setCur(charID, peripheral + Math.min(periphDeficit, moterecharge));
+                }
+            }
+        };
+        const getAnimaDrop = (charID, animaLevel, mins) => {
+            const reportObj = {initAnimaLevel: animaLevel, initMins: mins};
+            mins += parseInt(getAttrByName(charID, "animapartialdecay") || 0);
+            reportObj.withDecayMins = mins;
+            const attrList = {};
+            const animaDropTimes = [30, 15, 15];
+            reportObj.loopSequence = [];
+            while (true) {
+                if (animaLevel === 0) {
+                    reportObj.loopSequence.push("[Anima: 0] Zeroing Partial Decay, BREAK.");
+                    attrList.animapartialdecay = 0;
+                    break;
+                } else if (mins >= animaDropTimes[animaLevel - 1]) {
+                    const [oldAnima, oldMins] = [animaLevel, mins];
+                    animaLevel--;
+                    mins -= animaDropTimes[animaLevel];
+                    reportObj.loopSequence.push(`[Anima: ${oldAnima}] mins (${oldMins}) >= dropTime (${animaDropTimes[oldAnima - 1]})<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Anima: ${oldAnima} -> ${animaLevel}, newMins: ${mins}`);
+                } else {
+                    attrList.animapartialdecay = mins;
+                    reportObj.loopSequence.push(`[Anima: ${animaLevel}] Insufficient Time: AnimaPartialDecay = ${mins}, BREAK.`);
+                    break;
+                }
+            };
+            reportObj.loopSequence = `<br>${reportObj.loopSequence.join("<br>")}`;
+            reportObj.attrList = attrList;
+            setAttrs(charID, attrList);
+            reportObj.newAnimaDecay = getAttrByName(charID, "animapartialdecay");
+            if (charID === "-MavmPq2v6Tec86-ce27") {
+                C.Show(reportObj, "getAnimaDrop('Kainen')", {force: true, target: "Kainen"});
+            }
+            return animaLevel;
+        };
+        const [time, unit] = (timeRef || "").match(/(\d+\.?\d*)(\w)/u).slice(1);
+        const mins = parseFloat(time) * (unit === "h" ? 60 : 1);
+        Object.values(MAS.TER.Players).forEach((playerData) => {
+            if ("charID" in playerData) {
+                TRACKERS.anima.setCur(playerData.charID, getAnimaDrop(playerData.charID, parseInt(getAttrByName(playerData.charID, "animalevel")), mins));
+                const moteRechargeTime = parseFloat(getAttrByName(playerData.charID, "moterechargepartialtime") || 0) + mins / 60;
+                const moteRecharges = Math.floor(moteRechargeTime);
+                for (let i = 0; i < moteRecharges; i++) {
+                    rechargeMotes(playerData.charID);
+                }
+                setAttrs(playerData.charID, {moterechargepartialtime: moteRechargeTime - moteRecharges});
+            }
+        });
     };
     // #endregion
 

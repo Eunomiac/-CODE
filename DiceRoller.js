@@ -268,17 +268,18 @@ const DiceRoller = (() => {
          *      hasThreshold: bool
          * }
          */
+        C.Show({name, message, flags, pool, diff});
         const rollResults = {
             name: name ? name : false,
             message: message ? message : false,
             pool
         };
         diff = diff || 0;
-        const rerollNums = (flags.find((flag) => /^r(0|([1-9])+|10)$/u.test(flag)) || "").slice(1).split("").map((num) => parseInt(num.replace(/X/gu, "10")));
-        const botchNums = (flags.find((flag) => /^b(0|([1-9])+|10)$/u.test(flag)) || "b1").slice(1).split("").map((num) => parseInt(num.replace(/X/gu, "10")));
-        const targetNum = parseInt((flags.find((flag) => /^t([0-9]|10)$/u.test(flag)) || "t7").replace(/X/gu, "10").slice(1));
+        const rerollNums = (flags.find((flag) => /^r(0|([1-9X])+|10)$/u.test(flag)) || "").slice(1).split("").map((num) => parseInt(num.replace(/X/gu, "10")));
+        const botchNums = (flags.find((flag) => /^b(0|([1-9X])+|10)$/u.test(flag)) || "b1").slice(1).split("").map((num) => parseInt(num.replace(/X/gu, "10")));
+        const targetNum = parseInt((flags.find((flag) => /^t([0-9]|10|X)$/u.test(flag)) || "t7").replace(/X/gu, "10").slice(1));
         const autoSuccs = parseInt((flags.find((flag) => /^a\d+$/u.test(flag)) || "a0").slice(1));
-        const doublesNum = parseInt((flags.find((flag) => /^d([0-9]|10)$/u.test(flag)) || "dX").replace(/X/gu, "10").replace(/d0/u, "d11").slice(1));
+        const doublesNum = parseInt((flags.find((flag) => /^d([0-9]|10|X)$/u.test(flag)) || "dX").replace(/X/gu, "10").replace(/d0/u, "d11").slice(1));
         const specVal = _.some(flags, (flag) => /^sp$/u.test(flag)) ? 1 : 0;
         const stuntVal = parseInt((flags.find((flag) => /^[S|s][0123]$/u.test(flag)) || "S0").slice(1));
         const initSuccs = _.some(flags, (flag) => /^i$/u.test(flag)) ? 3 : 0;

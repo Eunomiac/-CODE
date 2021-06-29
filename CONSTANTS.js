@@ -200,7 +200,7 @@ const C = (() => {
 
     // #region Sandbox Specifications
     const UNITSIZE = 10;
-    const CHATWIDTH = 283; // The minimum width of the chat panel, in pixels. Be sure to subtract twice any border widths.
+    const CHATWIDTH = 281; // The minimum width of the chat panel, in pixels. Be sure to subtract twice any border widths.
 
     const UPSHIFT = -26;   // Constants governing how the chat box is positioned in the chat panel: By default, everything
     const LEFTSHIFT = -45; // shifts up and to the left to cover the standard chat output with the custom styles below.
@@ -383,7 +383,10 @@ const C = (() => {
         "stealth": "Stealth",
         "survival": "Survival",
         "thrown": "Thrown",
-        "war": "War"
+        "war": "War",
+        "moterecharge": "Mote Recharge per Hour",
+        "animalevel": "Anima",
+        "moterechargepartialtime": "Partial Mote Recharge Time"
     };
     const SHEETDATA = {
         numHealthBoxes: 32
@@ -403,12 +406,13 @@ const C = (() => {
             "width": "auto", "min-width": `${CHATWIDTH}px`,
             "height": "auto", "min-height": "39px",
             "margin": `${UPSHIFT}px 0 ${BOTTOMSHIFT}px ${LEFTSHIFT}px`,
-            "padding": "0",
+            "padding": "0 0 2px 0",
             "color": COLORS.palegold,
             "text-align": "center",
             "position": "relative",
             "text-shadow": "none", "box-shadow": "none", "border": "none",
-            "overflow": "hidden"
+            "overflow": "hidden",
+            "cursor": "default"
         }/*
             "min-width": "270px",
             "margin": "-25px 0 0 -42px",
@@ -535,8 +539,9 @@ const C = (() => {
         },
         dieRerollSpan: {
             "display": "inline-block",
-            "height": "15px",
-            "margin": "-15px -10px 0 -3px",
+            "height": "5px",
+            "line-height": "0px",
+            "margin": "-4px -10px 0 -3px",
             "padding": "10px 0 0 0",
             "color": "white",
             "font-family": "'Oswald'",
@@ -642,23 +647,23 @@ const C = (() => {
     const randStr = (length = 10) => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), length).join("");
 
 
-    const Alert = (content, title, {direct = false, force = false, noarchive = true} = {}) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
+    const Alert = (content, title, {direct = false, force = false, noarchive = true, target = "gm"} = {}) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
         const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
         if (force || STA.TE.isShowingDebugMessages) {
             if (content || title) {
                 if (title) {
                     if (content === null) {
-                        sendChat(randStr(), `${direct ? "/direct" : "/w gm"} ${C.Box([
+                        sendChat(randStr(), `${direct ? "/direct" : `/w ${target}`} ${C.Box([
                             C.Block(C.Header(title, 3), "#666")
                         ].join(""))}`, null, {noarchive});
                     } else {
-                        sendChat(randStr(), `${direct ? "/direct" : "/w gm"} ${C.Box([
+                        sendChat(randStr(), `${direct ? "/direct" : `/w ${target}`} ${C.Box([
                             C.Block(C.Header(title, 3), "#666"),
                             C.Block(content)
                         ].join(""))}`, null, {noarchive});
                     }
                 } else {
-                    sendChat(randStr(), `${direct ? "/direct" : "/w gm"} ${content}`, null, {noarchive});
+                    sendChat(randStr(), `${direct ? "/direct" : `/w ${target}`} ${content}`, null, {noarchive});
                 }
             }
         }
@@ -967,7 +972,7 @@ const C = (() => {
     const UPSHIFT = -25;
     const LEFTSHIFT = -42;
     const BOTTOMSHIFT = 0; */
-    const Box = (content) => `<div style=" display: block; margin: ${UPSHIFT}px 0 ${BOTTOMSHIFT}px ${LEFTSHIFT}px; width: auto; min-width: ${CHATWIDTH}px; height: auto; min-height: 39px; color: black; text-align: center; text-align-last: center; position: relative; border: none; text-shadow: none; box-shadow: none; outline: none; padding: 0; overflow: hidden;">${content}</div>`;
+    const Box = (content) => `<div style=" display: block; margin: ${UPSHIFT}px 0 ${BOTTOMSHIFT}px ${LEFTSHIFT}px; width: auto; min-width: ${CHATWIDTH}px; height: auto; min-height: 39px; color: black; text-align: center; text-align-last: center; position: relative; border: none; text-shadow: none; box-shadow: none; outline: none; padding: 0 0 2px 0; overflow: hidden; cursor: default;">${content}</div>`;
     const Header = (content, bgColor = "rgba(80,80,80,1)") => `<span style=" display: block; height: auto; width: auto; margin: 0; padding: 0 5px; text-align: left; text-align-last: left; color: white; background-color: ${bgColor}; border: none; text-shadow: none; box-shadow: none; font-variant: small-caps;font-size: 16px;line-height: 24px; font-family: sans-serif; ">${content}</span>`;
     const Block = (content, bgColor = "white", fontFamily = "Sura", fontWeight = "normal", fontSize = 14, lineHeight) => `<div style=" width: 100%; background: ${bgColor}; outline: 2px solid black; font-family: '${fontFamily}'; font-weight: ${fontWeight}; font-size: ${fontSize}px; line-height: ${lineHeight ? lineHeight : fontSize + 4}px; margin-top: 2px; text-align: left; text-align-last: left; padding: 5px;">${content}</div>`;
     const CodeBlock = (content, bgColor = "white") => Block(content, bgColor, "Fira Code", "bold", 8);
