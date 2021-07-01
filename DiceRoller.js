@@ -1,6 +1,121 @@
 void MarkStart("DiceRoller");
 const DiceRoller = (() => {
 
+    /**
+     * Add a big circle that juts out to contain the threshold successes (or total successes, if no diff)
+     * on rolls.
+     */const parseTraitAttr = (traitAttr) => traitAttr.replace(/ /gu, "_").toLowerCase();
+    const getTraitDictionary = () => {
+        const traits = _.groupBy(C.ATTRREF, (trait, abbv) => /[A-Z]+/u.test(abbv) ? "attributes" : "abilities");
+        traits.all = [
+            ...traits.attributes.map((attribute) => [attribute, parseTraitAttr(attribute)]),
+            ...traits.attributes.map((attribute) => [attribute.toUpperCase(), parseTraitAttr(attribute)]),
+            ...traits.abilities.map((ability) => [ability, parseTraitAttr(ability)]),
+            ...traits.abilities.map((ability) => [`${ability.slice(0, 1).toUpperCase()}${ability.slice(1)}`, parseTraitAttr(ability)])
+        ];
+        traits.attributes = traits.attributes.map((attribute) => [attribute.toUpperCase(), parseTraitAttr(attribute)]);
+        [...traits.all].forEach(([trait]) => {
+            if (/ /u.test(trait)) {
+                traits.all.push(...[
+                    [trait.replace(/ /gu, ""), parseTraitAttr(trait)],
+                    [trait.replace(/ /gu, "_"), parseTraitAttr(trait)],
+                    [trait.replace(/ (.)/gu, (match, char) => ` ${char.toUpperCase()}`), parseTraitAttr(trait)],
+                    [trait.replace(/ (.)/gu, (match, char) => `${char.toUpperCase()}`), parseTraitAttr(trait)]
+                ]);
+            }
+        });
+        traits.dict = Object.fromEntries(Object.values(traits.all));
+        return traits;
+    };
+    const reduceTraitList = (traitList) => _.uniq(traitList.map(([ref, trait]) => `${ref}:${parseTraitAttr(trait)}`)).map((refTrait) => refTrait.split(/:/u));
+    const filterTraitList = (traitPairs, regexp) => reduceTraitList(traitPairs.filter(([ref, trait]) => regexp.test(ref))).map(([ref, trait]) => trait);
+    const parseTraitAbbv = (traitAbbv) => {
+        if ([false, undefined, null, ""].includes(traitAbbv)) { return false }
+        const traits = getTraitDictionary();
+
+        const matchingTraits = {
+            start: [...traits[/^[A-Z]+$/u.test(traitAbbv) ? "attributes" : "all"]],
+            firstChars: [],
+            firstCharsNoCase: [],
+            multiWord: [],
+            multiWordNoCase: [],
+            anyChars: [],
+            anyCharsNoCase: []
+        };
+        // console.log(matchingTraits);
+        matchingTraits.firstChars = filterTraitList(matchingTraits.start, new RegExp(`^${traitAbbv}`, "u"));
+        if (matchingTraits.firstChars.length === 1) { return matchingTraits.firstChars.pop() }
+        matchingTraits.firstCharsNoCase = filterTraitList(matchingTraits.start, new RegExp(`^${traitAbbv}`, "ui"));
+        if (matchingTraits.firstCharsNoCase.length === 1) { return matchingTraits.firstCharsNoCase.pop() }
+        matchingTraits.multiWord = reduceTraitList(matchingTraits.start.filter((trait) => (/[_ ]+/u.test(trait) ? `${trait}`.replace(/(?:^|_| )(.)[^ _]+/gu, "$1") : trait) === traitAbbv));
+        if (matchingTraits.multiWord.length === 1) { return matchingTraits.multiWord.pop()[1] }
+        matchingTraits.multiWordNoCase = reduceTraitList(matchingTraits.start.filter((trait) => `${(/[_ ]+/u.test(trait) ? `${trait}`.replace(/(?:^|_| )(.)[^ _]+/gu, "$1") : trait)}`.toLowerCase() === traitAbbv.toLowerCase()));
+        if (matchingTraits.multiWordNoCase.length === 1) { return matchingTraits.multiWordNoCase.pop()[1] }
+        const anyCharPattern = traitAbbv.split("").join(".*");
+        matchingTraits.anyChars = filterTraitList(matchingTraits.start, new RegExp(`^${anyCharPattern}`, "u"));
+        if (matchingTraits.anyChars.length === 1) { return matchingTraits.anyChars.pop() }
+        matchingTraits.anyCharsNoCase = filterTraitList(matchingTraits.start, new RegExp(`^${anyCharPattern}`, "ui"));
+        if (matchingTraits.anyCharsNoCase.length === 1) { return matchingTraits.anyCharsNoCase.pop() }
+        const multipleMatches = Object.values(_.omit(matchingTraits, "start")).filter((list) => list.length > 0).reduce((minList, list) => (minList === false || list.length < minList.length) ? list : minList, false);
+        if (multipleMatches && multipleMatches.length) {
+            return multipleMatches;
+        }
+        return false;
+    };
+    const parseDicePool = (charID, rollString) => {
+        const dicePoolData = {
+            pool: 0,
+            traits: "",
+            mod: 0,
+            diff: 0,
+            totalPool: 0
+        };
+        const debugData = {};
+        if (/^\d+([+-]\d+)?(v\d+)?/u.test(rollString)) {
+            [dicePoolData.pool, dicePoolData.mod, dicePoolData.diff] = rollString.match(/^(\d+)([+-]\d+)?(?:v(\d+))?/u).slice(1);
+        } else if (/^\w+(\+\w+)*([+-]\d+)?(v\d+)?/u.test(rollString)) {
+            [dicePoolData.traits, dicePoolData.mod, dicePoolData.diff] = rollString.match(/^(\w+(?:\+\w+)*)(?:([+-]\d+))?(?:v(\d+))?/u).slice(1);
+        }
+        dicePoolData.pool = parseInt(dicePoolData.pool || 0);
+        dicePoolData.mod = parseInt(dicePoolData.mod || 0);
+        dicePoolData.diff = parseInt(dicePoolData.diff || (rollString.match(/\bv(\d+)\b/u) || []).slice(1).shift() || 0);
+        dicePoolData.traitAbbvs = (dicePoolData.traits || "").split(/\+/u).map((traitAbbv) => [traitAbbv, parseTraitAbbv(traitAbbv)]);
+        debugData.traitAbbvs = [...dicePoolData.traitAbbvs];
+        const multiMatches = dicePoolData.traitAbbvs.filter(([abbv, trait]) => Array.isArray(trait));
+        if (multiMatches.length) {
+            return `Be more specific!<br>${multiMatches.map(([abbv, traits]) => `* '${abbv}' could mean any of: ${traits.join(", ")}<br>`)}`;
+        }
+        dicePoolData.traits = dicePoolData.traitAbbvs.map(([abbv, trait]) => trait).filter((trait) => Boolean(trait));
+        debugData.traits = [...dicePoolData.traits];
+        if (dicePoolData.traits.length) {
+            const attrDict = getTraitDictionary().dict;
+            dicePoolData.traits = Object.fromEntries(_.compact(dicePoolData.traits
+                .map((trait) => trait in attrDict ? attrDict[trait] : (typeof trait === "string" && C.Proper(trait).replace(/_/gu, " ") || trait))
+                .map((attr) => attr in C.ATTRNAMEREF
+                    ? [C.ATTRNAMEREF[attr], `gABN(${attr})`] // getAttrByName(charID, attr)]
+                    : false)));
+        }
+        debugData.parseTraits = dicePoolData.traits;
+
+        dicePoolData.totalPool = dicePoolData.pool + dicePoolData.mod + Object.values(dicePoolData.traits).reduce((tot, val) => tot + val, 0);
+        dicePoolData.debug = debugData;
+        return dicePoolData;
+    };
+
+    /**
+     * SUPER EASY to add attribute-fetching syntax, i.e "!roll STR+awa+2 v5 sp wp a3"
+     *  - difficulty can be spaced out like a flag ("v#") to make attribute combos extractable
+     *  - attribute is assumed to be first
+     *  - second is assumed to be skill UNLESS in all caps
+     *
+     * Robust matching method:
+     *  - iterate through each letter of the abbreviation submitted, narrowing down the list of possible
+     *       traits it could be
+     *  - if necessary, assume first is attribute and second is ability
+     *  - if run out of letters before narrowed down to one, send the player a 'I don't know if 'in'
+     *       means 'investigation' or 'integrity', please use more letters!' message
+     */
+
     // #region *** *** FRONT *** ***
     const SCRIPTNAME = "DiceRoller";
     const STA = {get TE() { return C.RO.OT[SCRIPTNAME] }};

@@ -516,7 +516,7 @@ const C = (() => {
         },
         diceLineDiv: {
             "margin": "5px 0 15px 0",
-            "padding": "5px 0 0 0",
+            "padding": "5px 1px 0 1px",
             "background-image": "url('https://i.imgur.com/rjfInxn.jpg')",
             "box-shadow": "0px -5px 5px rgba(0,0,0,0.75), 0px 5px 5px rgba(255,255,255,0.5)"
         },
